@@ -6,7 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import os
-import requests
+from huggingface_hub import hf_hub_download
 
 # Page config
 st.set_page_config(page_title="Buôn Bán Xe Máy", page_icon="🏍️", layout="wide")
@@ -33,125 +33,104 @@ def scroll_to_top():
 if os.path.exists("unnamed.jpg"):
     st.image("unnamed.jpg", use_column_width=True)
 else:
-    st.markdown("""
+    st.markdown(
+        """
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;'>
         <h1 style='color: white; margin: 0;'>🏍️ HỆ THỐNG BUÔN BÁN XE MÁY</h1>
         <p style='color: white; margin: 10px 0 0 0;'>Tìm kiếm và gợi ý xe máy thông minh</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
     st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ==============================
-# 📥 DOWNLOAD FROM DROPBOX
+# 📥 DOWNLOAD FROM HUGGING FACE
 # ==============================
-def download_from_dropbox(url, output_path):
-    """Download file từ Dropbox"""
-    if os.path.exists(output_path):
-        file_size = os.path.getsize(output_path)
-        if file_size > 0:
-            return True
-        else:
-            # File tồn tại nhưng rỗng, xóa và download lại
-            os.remove(output_path)
+def download_from_huggingface(repo_id, filename, cache_dir="./model_cache"):
+    """
+    Download file từ Hugging Face Hub
     
+    Args:
+        repo_id: ID của repository trên Hugging Face (vd: "username/repo-name")
+        filename: Tên file cần download
+        cache_dir: Thư mục lưu cache
+    
+    Returns:
+        str: Đường dẫn đến file đã download
+    """
     try:
-        # Đảm bảo URL có ?dl=1 để download trực tiếp
-        if '?dl=0' in url:
-            url = url.replace('?dl=0', '?dl=1')
-        elif '?dl=1' not in url:
-            url = url + '?dl=1'
+        # Tạo thư mục cache nếu chưa có
+        os.makedirs(cache_dir, exist_ok=True)
         
-        # Download với progress
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
+        # Download file với progress bar
+        with st.spinner(f"📥 Đang tải {filename} từ Hugging Face..."):
+            file_path = hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                cache_dir=cache_dir,
+                resume_download=True  # Cho phép resume nếu download bị gián đoạn
+            )
         
-        total_size = int(response.headers.get('content-length', 0))
+        return file_path
         
-        # Tạo progress bar
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        with open(output_path, 'wb') as f:
-            if total_size == 0:
-                f.write(response.content)
-                progress_bar.progress(100)
-            else:
-                downloaded = 0
-                chunk_size = 8192
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        progress = int((downloaded / total_size) * 100)
-                        progress_bar.progress(progress)
-                        status_text.text(f"Đã tải: {downloaded / (1024*1024):.1f}MB / {total_size / (1024*1024):.1f}MB")
-        
-        progress_bar.empty()
-        status_text.empty()
-        
-        # Kiểm tra file đã download thành công
-        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-            return True
-        else:
-            st.error("File download không thành công hoặc bị lỗi")
-            return False
-            
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Lỗi kết nối: {str(e)}")
-        return False
     except Exception as e:
-        st.error(f"❌ Lỗi không xác định: {str(e)}")
-        return False
+        st.error(f"❌ Lỗi khi tải {filename}: {str(e)}")
+        return None
 
 
 @st.cache_resource
 def load_model():
-    """Load model và dataframe từ Dropbox"""
+    """Load model và dataframe từ Hugging Face"""
     
-    # Tạo thư mục nếu chưa có
-    os.makedirs("recommendation_model", exist_ok=True)
+    # ⚠️ THAY ĐỔI THÔNG TIN HUGGING FACE CỦA BẠN Ở ĐÂY
+    REPO_ID = "Mayer1226/Recommendation"  # ← Thay bằng repo của bạn
+    MODEL_FILENAME = "model_v4_20251121_202731.joblib"  # ← Tên file model
+    DF_FILENAME = "df_items_20251121_202731.joblib"  # ← Tên file dataframe
     
-    # ⚠️ THAY ĐỔI URLs DROPBOX CỦA BẠN Ở ĐÂY
-    # Lưu ý: Thay ?dl=0 thành ?dl=1 trong link Dropbox
-    MODEL_URL = "https://www.dropbox.com/scl/fi/2b4x8sk7fxhkea9t6rfpw/model_v4_20251121_202731.joblib?rlkey=186px38xe81lv4vcg9mmld64b&st=dnjs5zyn&dl=0"  # ← Thay link của bạn
-    DF_URL = "https://www.dropbox.com/scl/fi/jompebmmq2qpfvxeq3fbc/df_items_20251121_202731.joblib?rlkey=f42x8thzpz1csxb5sdouyhw4h&st=znly02ap&dl=0"        # ← Thay link của bạn
-    
-    model_path = "recommendation_model/model_v4.joblib"
-    df_path = "recommendation_model/df_items.joblib"
-    
-    # Download files nếu chưa có
-    files_to_download = []
-    if not os.path.exists(model_path):
-        files_to_download.append(("Model", MODEL_URL, model_path))
-    if not os.path.exists(df_path):
-        files_to_download.append(("Data", DF_URL, df_path))
-    
-    if files_to_download:
-        st.info("🔄 Đang tải dữ liệu lần đầu tiên... Vui lòng đợi trong giây lát.")
-        
-        for file_name, url, path in files_to_download:
-            with st.spinner(f"📥 Đang tải {file_name} file..."):
-                success = download_from_dropbox(url, path)
-                if not success:
-                    st.error(f"❌ Không thể tải {file_name} file")
-                    st.info("""
-                    **Hướng dẫn khắc phục:**
-                    1. Kiểm tra link Dropbox có đúng không
-                    2. Đảm bảo link có ?dl=1 ở cuối
-                    3. Kiểm tra file có được share công khai không
-                    
-                    **Cách lấy link Dropbox đúng:**
-                    - Upload file lên Dropbox
-                    - Click "Share" → "Create link"
-                    - Copy link và thay ?dl=0 thành ?dl=1
-                    """)
-                    st.stop()
-        
-        st.success("✅ Tải dữ liệu thành công!")
-    
-    # Load model và dataframe
     try:
+        # Hiển thị thông báo
+        st.info("🔄 Đang tải dữ liệu từ Hugging Face... Vui lòng đợi trong giây lát.")
+        
+        # Download model file
+        model_path = download_from_huggingface(REPO_ID, MODEL_FILENAME)
+        if model_path is None:
+            st.error("❌ Không thể tải model file")
+            st.info(
+                """
+                **Hướng dẫn khắc phục:**
+                1. Kiểm tra REPO_ID có đúng không (format: "username/repo-name")
+                2. Kiểm tra tên file MODEL_FILENAME có đúng không
+                3. Đảm bảo repository là public hoặc bạn đã đăng nhập
+                4. Kiểm tra kết nối internet
+                
+                **Cách upload lên Hugging Face:**
+                ```python
+                from huggingface_hub import HfApi
+                api = HfApi()
+                
+                # Tạo repository (chỉ cần làm 1 lần)
+                api.create_repo(repo_id="username/repo-name", repo_type="model")
+                
+                # Upload files
+                api.upload_file(
+                    path_or_fileobj="model_v4.joblib",
+                    path_in_repo="model_v4_20251121_202731.joblib",
+                    repo_id="username/repo-name"
+                )
+                ```
+                """
+            )
+            st.stop()
+        
+        # Download dataframe file
+        df_path = download_from_huggingface(REPO_ID, DF_FILENAME)
+        if df_path is None:
+            st.error("❌ Không thể tải dataframe file")
+            st.stop()
+        
+        # Load model và dataframe
         with st.spinner("⚙️ Đang load model..."):
             model = joblib.load(model_path)
             df = joblib.load(df_path)
@@ -161,11 +140,21 @@ def load_model():
             current_year = datetime.now().year
             df["registration_year"] = current_year - df["age"]
             
+            st.success("✅ Tải dữ liệu thành công!")
             return model, df
-            
+    
     except Exception as e:
         st.error(f"❌ Lỗi khi load model: {str(e)}")
-        st.info("💡 Thử xóa thư mục 'recommendation_model' và reload lại trang")
+        st.info(
+            """
+            💡 **Một số lỗi thường gặp:**
+            
+            - **Repository not found**: Kiểm tra lại REPO_ID
+            - **File not found**: Kiểm tra lại tên file
+            - **Authentication error**: Repository private cần đăng nhập
+            - **Connection error**: Kiểm tra kết nối internet
+            """
+        )
         st.stop()
 
 
@@ -271,14 +260,16 @@ def show_about_page():
 
     # Mục đích
     st.markdown("## 🎯 Mục Đích")
-    st.markdown("""
+    st.markdown(
+        """
     Hệ thống **Buôn Bán Xe Máy** được xây dựng nhằm:
     
     - 🔍 **Tìm kiếm thông minh**: Giúp người dùng dễ dàng tìm kiếm xe máy phù hợp với nhu cầu
     - 🎯 **Gợi ý cá nhân hóa**: Đề xuất các xe tương tự dựa trên sở thích và lựa chọn của người dùng
     - 📊 **Lọc đa tiêu chí**: Hỗ trợ lọc theo nhiều tiêu chí như hãng xe, giá, khu vực, dung tích động cơ...
     - 💡 **Trải nghiệm tốt nhất**: Cung cấp giao diện thân thiện, dễ sử dụng cho mọi đối tượng người dùng
-    """)
+    """
+    )
 
     st.markdown("---")
 
@@ -288,97 +279,117 @@ def show_about_page():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("""
+        st.markdown(
+            """
         ### 🔎 Tìm Kiếm & Lọc
         - Tìm kiếm theo từ khóa tự do
         - Lọc theo hãng xe, model
         - Lọc theo loại xe, khu vực
         - Lọc theo dung tích động cơ
         - Lọc theo khoảng giá
-        """)
+        """
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         ### 📋 Hiển Thị Thông Tin
         - Thông tin chi tiết từng xe
         - Giá cả, số km đã đi
         - Năm đăng ký, xuất xứ
         - Mô tả chi tiết sản phẩm
-        """)
+        """
+        )
 
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         ### 🎯 Hệ Thống Gợi Ý
         - Gợi ý xe tương tự
         - Tính toán độ tương đồng
         - Đề xuất dựa trên đặc điểm xe
         - Cá nhân hóa trải nghiệm
-        """)
+        """
+        )
 
-        st.markdown("""
+        st.markdown(
+            """
         ### 💻 Giao Diện Người Dùng
         - Thiết kế responsive
         - Dễ dàng điều hướng
         - Hiển thị trực quan
         - Tương tác mượt mà
-        """)
+        """
+        )
 
     st.markdown("---")
 
     # Công nghệ
     st.markdown("## 🛠️ Công Nghệ Sử Dụng")
 
-    st.markdown("""
+    st.markdown(
+        """
     ### 📚 Thư Viện & Framework
-    """)
+    """
+    )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("""
+        st.markdown(
+            """
         **Frontend & UI**
         - 🎨 **Streamlit**: Framework web app
         - 📊 **Pandas**: Xử lý dữ liệu
         - 🔢 **NumPy**: Tính toán số học
-        """)
+        """
+        )
 
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         **Machine Learning**
         - 🤖 **Scikit-learn**: Thuật toán ML
         - 📝 **TF-IDF**: Vector hóa văn bản
         - 📏 **Cosine Similarity**: Tính độ tương đồng
-        """)
+        """
+        )
 
     with col3:
-        st.markdown("""
+        st.markdown(
+            """
         **Lưu Trữ & Xử Lý**
         - 💾 **Joblib**: Lưu/load model
-        - ☁️ **Dropbox**: Cloud storage
+        - 🤗 **Hugging Face**: Cloud storage
         - ⏰ **Datetime**: Xử lý thời gian
-        """)
+        """
+        )
 
     st.markdown("---")
 
     # Thuật toán
     st.markdown("## 🧠 Thuật Toán Gợi Ý")
 
-    st.markdown("""
+    st.markdown(
+        """
     Hệ thống sử dụng **Content-Based Filtering** với các bước:
     
     1. **Vector hóa đặc điểm**: Chuyển đổi thông tin xe thành vector số
     2. **TF-IDF**: Trích xuất đặc điểm quan trọng từ mô tả và thông tin xe
     3. **Cosine Similarity**: Tính toán độ tương đồng giữa các xe
     4. **Ranking**: Sắp xếp và đề xuất xe có độ tương đồng cao nhất
-    """)
+    """
+    )
 
     # Visualization of similarity
-    st.info("""
+    st.info(
+        """
     💡 **Ví dụ**: Khi bạn xem một chiếc Honda Wave Alpha, hệ thống sẽ tìm các xe có:
     - Cùng hãng hoặc phân khúc tương tự
     - Giá cả gần nhau
     - Dung tích động cơ tương đương
     - Đặc điểm kỹ thuật giống nhau
-    """)
+    """
+    )
 
     st.markdown("---")
 
@@ -405,28 +416,34 @@ def show_about_page():
     st.markdown("## 📖 Hướng Dẫn Sử Dụng")
 
     with st.expander("🔍 Cách tìm kiếm xe"):
-        st.markdown("""
+        st.markdown(
+            """
         1. Nhập từ khóa vào ô tìm kiếm (tên xe, hãng, loại xe...)
         2. Sử dụng bộ lọc để thu hẹp kết quả
         3. Nhấn nút "Tìm kiếm" hoặc Enter
         4. Xem danh sách kết quả phù hợp
-        """)
+        """
+        )
 
     with st.expander("🎯 Cách sử dụng bộ lọc"):
-        st.markdown("""
+        st.markdown(
+            """
         1. Mở rộng phần "Bộ Lọc Tìm Kiếm"
         2. Chọn các tiêu chí: Hãng xe, Model, Loại xe, Khu vực, Dung tích
         3. Điều chỉnh khoảng giá mong muốn
         4. Kết quả sẽ tự động cập nhật
-        """)
+        """
+        )
 
     with st.expander("👁️ Cách xem chi tiết và xe tương tự"):
-        st.markdown("""
+        st.markdown(
+            """
         1. Nhấn nút "Xem chi tiết" trên xe bạn quan tâm
         2. Xem đầy đủ thông tin chi tiết của xe
         3. Cuộn xuống phần "Xe Tương Tự" để xem gợi ý
         4. Nhấn "Xem chi tiết" trên xe gợi ý để khám phá thêm
-        """)
+        """
+        )
 
     st.markdown("---")
 
@@ -436,7 +453,9 @@ def show_about_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        if st.button("🔍 Đi đến Trang Tìm Kiếm", use_container_width=True, type="primary"):
+        if st.button(
+            "🔍 Đi đến Trang Tìm Kiếm", use_container_width=True, type="primary"
+        ):
             st.session_state["page"] = "search"
             st.session_state["scroll_to_top"] = True
             st.rerun()
@@ -444,12 +463,15 @@ def show_about_page():
     st.markdown("---")
 
     # Footer
-    st.markdown("""
+    st.markdown(
+        """
     <div style='text-align: center; color: #666; padding: 20px;'>
         <p>💡 Được phát triển bởi Hoàng Phúc & Bích Thủy</p>
         <p>📧 Liên hệ hỗ trợ: phucthuy@buonbanxemay.vn</p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def show_search_page():
@@ -696,18 +718,22 @@ def show_detail_page():
     col_x, col_y = st.columns(2)
 
     with col_x:
-        st.markdown(f"""
+        st.markdown(
+            f"""
         - **🏢 Thương hiệu:** {item['brand']}
         - **🏍️ Model:** {item['model']}
         - **⚙️ Dung tích động cơ:** {item['engine_capacity']}
-        """)
+        """
+        )
 
     with col_y:
-        st.markdown(f"""
+        st.markdown(
+            f"""
         - **🌍 Xuất xứ:** {item['origin']}
         - **📍 Địa điểm:** {item['location']}
         - **🏷️ Phân loại:** {item['vehicle_type']}
-        """)
+        """
+        )
 
     st.markdown("---")
 
@@ -733,7 +759,8 @@ def show_detail_page():
     for i, (idx, row) in enumerate(recs.iterrows()):
         with cols[i]:
             with st.container():
-                st.markdown(f"""
+                st.markdown(
+                    f"""
                 <div style="
                     border: 2px solid #e0e0e0;
                     border-radius: 10px;
@@ -742,7 +769,9 @@ def show_detail_page():
                     height: 100%;
                 ">
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
                 st.markdown(f"### {row['brand']} {row['model']}")
 
@@ -755,7 +784,8 @@ def show_detail_page():
                 st.markdown(f"**📍 Địa điểm:** {row['location']}")
 
                 similarity_pct = row["similarity"] * 100
-                st.markdown(f"""
+                st.markdown(
+                    f"""
                 <div style="
                     background-color: #4CAF50;
                     color: white;
@@ -766,7 +796,9 @@ def show_detail_page():
                 ">
                     🎯 Độ tương đồng: {similarity_pct:.1f}%
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
                 if st.button(
                     "👁️ Xem chi tiết",
