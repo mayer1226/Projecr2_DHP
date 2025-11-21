@@ -31,53 +31,100 @@ def scroll_to_top():
 # ==============================
 # 🖼️ BANNER TIÊU ĐỀ Ở ĐẦU TRANG
 # ==============================
-st.image("unnamed.jpg", use_column_width=True)
+if os.path.exists("unnamed.jpg"):
+    st.image("unnamed.jpg", use_column_width=True)
+else:
+    st.markdown("""
+    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px;'>
+        <h1 style='color: white; margin: 0;'>🏍️ HỆ THỐNG BUÔN BÁN XE MÁY</h1>
+        <p style='color: white; margin: 10px 0 0 0;'>Tìm kiếm và gợi ý xe máy thông minh</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
 
-@st.cache_resource
-# def load_model():
-#     """Load model và dataframe"""
-#     model_files = glob.glob("recommendation_model/model_v4_*.joblib")
-#     df_files = glob.glob("recommendation_model/df_items_*.joblib")
+# ==============================
+# 📥 DOWNLOAD MODEL FROM GOOGLE DRIVE
+# ==============================
 def download_from_gdrive(file_id, output_path):
-    """Download file từ Google Drive"""
-    if not os.path.exists(output_path):
+    """Download file từ Google Drive với error handling tốt hơn"""
+    if os.path.exists(output_path):
+        return True
+    
+    try:
+        # URL format cho gdown
         url = f"https://drive.google.com/uc?id={file_id}"
-        gdown.download(url, output_path, quiet=False)
+        
+        # Download với fuzzy=True để xử lý file lớn
+        gdown.download(url, output_path, quiet=False, fuzzy=True)
+        
+        # Kiểm tra file đã download thành công chưa
+        if os.path.exists(output_path):
+            return True
+        else:
+            st.error(f"❌ Không thể download file. Vui lòng kiểm tra lại File ID và quyền truy cập.")
+            return False
+            
+    except Exception as e:
+        st.error(f"❌ Lỗi khi download: {str(e)}")
+        st.info("""
+        **Hướng dẫn khắc phục:**
+        1. Đảm bảo file trên Google Drive được share với quyền "Anyone with the link can view"
+        2. Kiểm tra File ID có đúng không
+        3. Link Google Drive: https://drive.google.com/file/d/FILE_ID/view
+        """)
+        return False
 
 
 @st.cache_resource
 def load_model():
     """Load model và dataframe"""
-
+    
     # Tạo thư mục nếu chưa có
     os.makedirs("recommendation_model", exist_ok=True)
-
-    # ⚠️ THAY ĐỔI FILE_ID CỦA BẠN Ở ĐÂY
-    MODEL_FILE_ID = "YOUR_MODEL_FILE_ID_HERE"  # Thay bằng ID của model file
-    DF_FILE_ID = "YOUR_DF_FILE_ID_HERE"  # Thay bằng ID của df file
-
+    
+    # ⚠️ THAY ĐỔI FILE IDs CỦA BẠN Ở ĐÂY
+    # Lấy từ link: https://drive.google.com/file/d/FILE_ID_HERE/view
+    MODEL_FILE_ID = "1que7me49U47W0JjV6Es8t1p-d5LLpBg7"  # ← Thay bằng ID của bạn
+    DF_FILE_ID = "14sM9VEkJB65DYdB9W4AtemesmjXlV20o"     # ← Thay bằng ID của bạn
+    
     model_path = "recommendation_model/model_v4.joblib"
     df_path = "recommendation_model/df_items.joblib"
-
+    
     # Download files nếu chưa có
-    with st.spinner("Đang tải model lần đầu... Vui lòng đợi trong giây lát."):
-        download_from_gdrive("1que7me49U47W0JjV6Es8t1p-d5LLpBg7", model_path)
-        download_from_gdrive("14sM9VEkJB65DYdB9W4AtemesmjXlV20o", df_path)
-
+    if not os.path.exists(model_path) or not os.path.exists(df_path):
+        st.info("🔄 Đang tải model lần đầu tiên... Quá trình này có thể mất vài phút.")
+        
+        # Download model file
+        if not os.path.exists(model_path):
+            with st.spinner("📥 Đang tải model file..."):
+                success = download_from_gdrive(MODEL_FILE_ID, model_path)
+                if not success:
+                    st.stop()
+        
+        # Download dataframe file
+        if not os.path.exists(df_path):
+            with st.spinner("📥 Đang tải data file..."):
+                success = download_from_gdrive(DF_FILE_ID, df_path)
+                if not success:
+                    st.stop()
+        
+        st.success("✅ Tải model thành công!")
+    
     # Load model
     try:
-        model = joblib.load(model_path)
-        df = joblib.load(df_path)
-        df = df.reset_index(drop=True)
-
-        # Tính năm đăng ký
-        current_year = datetime.now().year
-        df["registration_year"] = current_year - df["age"]
-
-        return model, df
+        with st.spinner("⚙️ Đang load model..."):
+            model = joblib.load(model_path)
+            df = joblib.load(df_path)
+            df = df.reset_index(drop=True)
+            
+            current_year = datetime.now().year
+            df["registration_year"] = current_year - df["age"]
+            
+            return model, df
     except Exception as e:
-        st.error(f"Lỗi khi load model: {str(e)}")
+        st.error(f"❌ Lỗi khi load model: {str(e)}")
+        st.info("💡 Thử xóa cache và reload lại trang")
         st.stop()
 
 
@@ -183,16 +230,14 @@ def show_about_page():
 
     # Mục đích
     st.markdown("## 🎯 Mục Đích")
-    st.markdown(
-        """
+    st.markdown("""
     Hệ thống **Buôn Bán Xe Máy** được xây dựng nhằm:
     
     - 🔍 **Tìm kiếm thông minh**: Giúp người dùng dễ dàng tìm kiếm xe máy phù hợp với nhu cầu
     - 🎯 **Gợi ý cá nhân hóa**: Đề xuất các xe tương tự dựa trên sở thích và lựa chọn của người dùng
     - 📊 **Lọc đa tiêu chí**: Hỗ trợ lọc theo nhiều tiêu chí như hãng xe, giá, khu vực, dung tích động cơ...
     - 💡 **Trải nghiệm tốt nhất**: Cung cấp giao diện thân thiện, dễ sử dụng cho mọi đối tượng người dùng
-    """
-    )
+    """)
 
     st.markdown("---")
 
@@ -202,117 +247,97 @@ def show_about_page():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown(
-            """
+        st.markdown("""
         ### 🔎 Tìm Kiếm & Lọc
         - Tìm kiếm theo từ khóa tự do
         - Lọc theo hãng xe, model
         - Lọc theo loại xe, khu vực
         - Lọc theo dung tích động cơ
         - Lọc theo khoảng giá
-        """
-        )
+        """)
 
-        st.markdown(
-            """
+        st.markdown("""
         ### 📋 Hiển Thị Thông Tin
         - Thông tin chi tiết từng xe
         - Giá cả, số km đã đi
         - Năm đăng ký, xuất xứ
         - Mô tả chi tiết sản phẩm
-        """
-        )
+        """)
 
     with col2:
-        st.markdown(
-            """
+        st.markdown("""
         ### 🎯 Hệ Thống Gợi Ý
         - Gợi ý xe tương tự
         - Tính toán độ tương đồng
         - Đề xuất dựa trên đặc điểm xe
         - Cá nhân hóa trải nghiệm
-        """
-        )
+        """)
 
-        st.markdown(
-            """
+        st.markdown("""
         ### 💻 Giao Diện Người Dùng
         - Thiết kế responsive
         - Dễ dàng điều hướng
         - Hiển thị trực quan
         - Tương tác mượt mà
-        """
-        )
+        """)
 
     st.markdown("---")
 
     # Công nghệ
     st.markdown("## 🛠️ Công Nghệ Sử Dụng")
 
-    st.markdown(
-        """
+    st.markdown("""
     ### 📚 Thư Viện & Framework
-    """
-    )
+    """)
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown(
-            """
+        st.markdown("""
         **Frontend & UI**
         - 🎨 **Streamlit**: Framework web app
         - 📊 **Pandas**: Xử lý dữ liệu
         - 🔢 **NumPy**: Tính toán số học
-        """
-        )
+        """)
 
     with col2:
-        st.markdown(
-            """
+        st.markdown("""
         **Machine Learning**
         - 🤖 **Scikit-learn**: Thuật toán ML
         - 📝 **TF-IDF**: Vector hóa văn bản
         - 📏 **Cosine Similarity**: Tính độ tương đồng
-        """
-        )
+        """)
 
     with col3:
-        st.markdown(
-            """
+        st.markdown("""
         **Lưu Trữ & Xử Lý**
         - 💾 **Joblib**: Lưu/load model
         - 🗂️ **Glob**: Quản lý file
         - ⏰ **Datetime**: Xử lý thời gian
-        """
-        )
+        """)
 
     st.markdown("---")
 
     # Thuật toán
     st.markdown("## 🧠 Thuật Toán Gợi Ý")
 
-    st.markdown(
-        """
+    st.markdown("""
     Hệ thống sử dụng **Content-Based Filtering** với các bước:
     
     1. **Vector hóa đặc điểm**: Chuyển đổi thông tin xe thành vector số
     2. **TF-IDF**: Trích xuất đặc điểm quan trọng từ mô tả và thông tin xe
     3. **Cosine Similarity**: Tính toán độ tương đồng giữa các xe
     4. **Ranking**: Sắp xếp và đề xuất xe có độ tương đồng cao nhất
-    """
-    )
+    """)
 
     # Visualization of similarity
-    st.info(
-        """
+    st.info("""
     💡 **Ví dụ**: Khi bạn xem một chiếc Honda Wave Alpha, hệ thống sẽ tìm các xe có:
     - Cùng hãng hoặc phân khúc tương tự
     - Giá cả gần nhau
     - Dung tích động cơ tương đương
     - Đặc điểm kỹ thuật giống nhau
-    """
-    )
+    """)
 
     st.markdown("---")
 
@@ -339,34 +364,28 @@ def show_about_page():
     st.markdown("## 📖 Hướng Dẫn Sử Dụng")
 
     with st.expander("🔍 Cách tìm kiếm xe"):
-        st.markdown(
-            """
+        st.markdown("""
         1. Nhập từ khóa vào ô tìm kiếm (tên xe, hãng, loại xe...)
         2. Sử dụng bộ lọc để thu hẹp kết quả
         3. Nhấn nút "Tìm kiếm" hoặc Enter
         4. Xem danh sách kết quả phù hợp
-        """
-        )
+        """)
 
     with st.expander("🎯 Cách sử dụng bộ lọc"):
-        st.markdown(
-            """
+        st.markdown("""
         1. Mở rộng phần "Bộ Lọc Tìm Kiếm"
         2. Chọn các tiêu chí: Hãng xe, Model, Loại xe, Khu vực, Dung tích
         3. Điều chỉnh khoảng giá mong muốn
         4. Kết quả sẽ tự động cập nhật
-        """
-        )
+        """)
 
     with st.expander("👁️ Cách xem chi tiết và xe tương tự"):
-        st.markdown(
-            """
+        st.markdown("""
         1. Nhấn nút "Xem chi tiết" trên xe bạn quan tâm
         2. Xem đầy đủ thông tin chi tiết của xe
         3. Cuộn xuống phần "Xe Tương Tự" để xem gợi ý
         4. Nhấn "Xem chi tiết" trên xe gợi ý để khám phá thêm
-        """
-        )
+        """)
 
     st.markdown("---")
 
@@ -376,9 +395,7 @@ def show_about_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        if st.button(
-            "🔍 Đi đến Trang Tìm Kiếm", use_container_width=True, type="primary"
-        ):
+        if st.button("🔍 Đi đến Trang Tìm Kiếm", use_container_width=True, type="primary"):
             st.session_state["page"] = "search"
             st.session_state["scroll_to_top"] = True
             st.rerun()
@@ -386,15 +403,12 @@ def show_about_page():
     st.markdown("---")
 
     # Footer
-    st.markdown(
-        """
+    st.markdown("""
     <div style='text-align: center; color: #666; padding: 20px;'>
         <p>💡 Được phát triển bởi Hoàng Phúc & Bích Thủy</p>
         <p>📧 Liên hệ hỗ trợ: phucthuy@buonbanxemay.vn</p>
     </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
 
 def show_search_page():
@@ -641,22 +655,18 @@ def show_detail_page():
     col_x, col_y = st.columns(2)
 
     with col_x:
-        st.markdown(
-            f"""
+        st.markdown(f"""
         - **🏢 Thương hiệu:** {item['brand']}
         - **🏍️ Model:** {item['model']}
         - **⚙️ Dung tích động cơ:** {item['engine_capacity']}
-        """
-        )
+        """)
 
     with col_y:
-        st.markdown(
-            f"""
+        st.markdown(f"""
         - **🌍 Xuất xứ:** {item['origin']}
         - **📍 Địa điểm:** {item['location']}
         - **🏷️ Phân loại:** {item['vehicle_type']}
-        """
-        )
+        """)
 
     st.markdown("---")
 
@@ -682,8 +692,7 @@ def show_detail_page():
     for i, (idx, row) in enumerate(recs.iterrows()):
         with cols[i]:
             with st.container():
-                st.markdown(
-                    f"""
+                st.markdown(f"""
                 <div style="
                     border: 2px solid #e0e0e0;
                     border-radius: 10px;
@@ -692,9 +701,7 @@ def show_detail_page():
                     height: 100%;
                 ">
                 </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+                """, unsafe_allow_html=True)
 
                 st.markdown(f"### {row['brand']} {row['model']}")
 
@@ -707,8 +714,7 @@ def show_detail_page():
                 st.markdown(f"**📍 Địa điểm:** {row['location']}")
 
                 similarity_pct = row["similarity"] * 100
-                st.markdown(
-                    f"""
+                st.markdown(f"""
                 <div style="
                     background-color: #4CAF50;
                     color: white;
@@ -719,9 +725,7 @@ def show_detail_page():
                 ">
                     🎯 Độ tương đồng: {similarity_pct:.1f}%
                 </div>
-                """,
-                    unsafe_allow_html=True,
-                )
+                """, unsafe_allow_html=True)
 
                 if st.button(
                     "👁️ Xem chi tiết",
