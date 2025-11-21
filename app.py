@@ -4,10 +4,9 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import glob
 from datetime import datetime
 import os
-import gdown
+import requests
 
 # Page config
 st.set_page_config(page_title="Buôn Bán Xe Máy", page_icon="🏍️", layout="wide")
@@ -44,87 +43,129 @@ else:
 
 
 # ==============================
-# 📥 DOWNLOAD MODEL FROM GOOGLE DRIVE
+# 📥 DOWNLOAD FROM DROPBOX
 # ==============================
-def download_from_gdrive(file_id, output_path):
-    """Download file từ Google Drive với error handling tốt hơn"""
+def download_from_dropbox(url, output_path):
+    """Download file từ Dropbox"""
     if os.path.exists(output_path):
-        return True
-    
-    try:
-        # URL format cho gdown
-        url = f"https://drive.google.com/uc?id={file_id}"
-        
-        # Download với fuzzy=True để xử lý file lớn
-        gdown.download(url, output_path, quiet=False, fuzzy=True)
-        
-        # Kiểm tra file đã download thành công chưa
-        if os.path.exists(output_path):
+        file_size = os.path.getsize(output_path)
+        if file_size > 0:
             return True
         else:
-            st.error(f"❌ Không thể download file. Vui lòng kiểm tra lại File ID và quyền truy cập.")
+            # File tồn tại nhưng rỗng, xóa và download lại
+            os.remove(output_path)
+    
+    try:
+        # Đảm bảo URL có ?dl=1 để download trực tiếp
+        if '?dl=0' in url:
+            url = url.replace('?dl=0', '?dl=1')
+        elif '?dl=1' not in url:
+            url = url + '?dl=1'
+        
+        # Download với progress
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        total_size = int(response.headers.get('content-length', 0))
+        
+        # Tạo progress bar
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        with open(output_path, 'wb') as f:
+            if total_size == 0:
+                f.write(response.content)
+                progress_bar.progress(100)
+            else:
+                downloaded = 0
+                chunk_size = 8192
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        progress = int((downloaded / total_size) * 100)
+                        progress_bar.progress(progress)
+                        status_text.text(f"Đã tải: {downloaded / (1024*1024):.1f}MB / {total_size / (1024*1024):.1f}MB")
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        # Kiểm tra file đã download thành công
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+            return True
+        else:
+            st.error("File download không thành công hoặc bị lỗi")
             return False
             
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Lỗi kết nối: {str(e)}")
+        return False
     except Exception as e:
-        st.error(f"❌ Lỗi khi download: {str(e)}")
-        st.info("""
-        **Hướng dẫn khắc phục:**
-        1. Đảm bảo file trên Google Drive được share với quyền "Anyone with the link can view"
-        2. Kiểm tra File ID có đúng không
-        3. Link Google Drive: https://drive.google.com/file/d/FILE_ID/view
-        """)
+        st.error(f"❌ Lỗi không xác định: {str(e)}")
         return False
 
 
 @st.cache_resource
 def load_model():
-    """Load model và dataframe"""
+    """Load model và dataframe từ Dropbox"""
     
     # Tạo thư mục nếu chưa có
     os.makedirs("recommendation_model", exist_ok=True)
     
-    # ⚠️ THAY ĐỔI FILE IDs CỦA BẠN Ở ĐÂY
-    # Lấy từ link: https://drive.google.com/file/d/FILE_ID_HERE/view
-    MODEL_FILE_ID = "1que7me49U47W0JjV6Es8t1p-d5LLpBg7"  # ← Thay bằng ID của bạn
-    DF_FILE_ID = "14sM9VEkJB65DYdB9W4AtemesmjXlV20o"     # ← Thay bằng ID của bạn
+    # ⚠️ THAY ĐỔI URLs DROPBOX CỦA BẠN Ở ĐÂY
+    # Lưu ý: Thay ?dl=0 thành ?dl=1 trong link Dropbox
+    MODEL_URL = "https://www.dropbox.com/scl/fi/2b4x8sk7fxhkea9t6rfpw/model_v4_20251121_202731.joblib?rlkey=186px38xe81lv4vcg9mmld64b&st=dnjs5zyn&dl=0"  # ← Thay link của bạn
+    DF_URL = "https://www.dropbox.com/scl/fi/jompebmmq2qpfvxeq3fbc/df_items_20251121_202731.joblib?rlkey=f42x8thzpz1csxb5sdouyhw4h&st=znly02ap&dl=0"        # ← Thay link của bạn
     
     model_path = "recommendation_model/model_v4.joblib"
     df_path = "recommendation_model/df_items.joblib"
     
     # Download files nếu chưa có
-    if not os.path.exists(model_path) or not os.path.exists(df_path):
-        st.info("🔄 Đang tải model lần đầu tiên... Quá trình này có thể mất vài phút.")
-        
-        # Download model file
-        if not os.path.exists(model_path):
-            with st.spinner("📥 Đang tải model file..."):
-                success = download_from_gdrive(MODEL_FILE_ID, model_path)
-                if not success:
-                    st.stop()
-        
-        # Download dataframe file
-        if not os.path.exists(df_path):
-            with st.spinner("📥 Đang tải data file..."):
-                success = download_from_gdrive(DF_FILE_ID, df_path)
-                if not success:
-                    st.stop()
-        
-        st.success("✅ Tải model thành công!")
+    files_to_download = []
+    if not os.path.exists(model_path):
+        files_to_download.append(("Model", MODEL_URL, model_path))
+    if not os.path.exists(df_path):
+        files_to_download.append(("Data", DF_URL, df_path))
     
-    # Load model
+    if files_to_download:
+        st.info("🔄 Đang tải dữ liệu lần đầu tiên... Vui lòng đợi trong giây lát.")
+        
+        for file_name, url, path in files_to_download:
+            with st.spinner(f"📥 Đang tải {file_name} file..."):
+                success = download_from_dropbox(url, path)
+                if not success:
+                    st.error(f"❌ Không thể tải {file_name} file")
+                    st.info("""
+                    **Hướng dẫn khắc phục:**
+                    1. Kiểm tra link Dropbox có đúng không
+                    2. Đảm bảo link có ?dl=1 ở cuối
+                    3. Kiểm tra file có được share công khai không
+                    
+                    **Cách lấy link Dropbox đúng:**
+                    - Upload file lên Dropbox
+                    - Click "Share" → "Create link"
+                    - Copy link và thay ?dl=0 thành ?dl=1
+                    """)
+                    st.stop()
+        
+        st.success("✅ Tải dữ liệu thành công!")
+    
+    # Load model và dataframe
     try:
         with st.spinner("⚙️ Đang load model..."):
             model = joblib.load(model_path)
             df = joblib.load(df_path)
             df = df.reset_index(drop=True)
             
+            # Tính năm đăng ký
             current_year = datetime.now().year
             df["registration_year"] = current_year - df["age"]
             
             return model, df
+            
     except Exception as e:
         st.error(f"❌ Lỗi khi load model: {str(e)}")
-        st.info("💡 Thử xóa cache và reload lại trang")
+        st.info("💡 Thử xóa thư mục 'recommendation_model' và reload lại trang")
         st.stop()
 
 
@@ -312,7 +353,7 @@ def show_about_page():
         st.markdown("""
         **Lưu Trữ & Xử Lý**
         - 💾 **Joblib**: Lưu/load model
-        - 🗂️ **Glob**: Quản lý file
+        - ☁️ **Dropbox**: Cloud storage
         - ⏰ **Datetime**: Xử lý thời gian
         """)
 
