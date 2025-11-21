@@ -91,7 +91,7 @@ def load_model():
     
     try:
         # Hiển thị thông báo
-        st.info("🔄 Đang tải dữ liệu từ Hugging Face... Vui lòng đợi trong giây lát.")
+        # st.info("🔄 Đang tải dữ liệu từ Hugging Face... Vui lòng đợi trong giây lát.")
         
         # Download model file
         model_path = download_from_huggingface(REPO_ID, MODEL_FILENAME)
@@ -140,7 +140,7 @@ def load_model():
             current_year = datetime.now().year
             df["registration_year"] = current_year - df["age"]
             
-            st.success("✅ Tải dữ liệu thành công!")
+            # st.success("✅ Tải dữ liệu thành công!")
             return model, df
     
     except Exception as e:
@@ -869,3 +869,4 @@ elif st.session_state["page"] == "detail":
 # Footer
 st.markdown("---")
 st.markdown(f"*Hệ thống gợi ý xe máy - Tổng số xe: {len(df):,}*")
+
