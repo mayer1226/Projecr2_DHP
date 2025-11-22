@@ -583,6 +583,7 @@ def show_about_page():
     
     - 🔍 **Tìm kiếm thông minh**: Giúp người dùng dễ dàng tìm kiếm xe máy phù hợp với nhu cầu
     - 🎯 **Gợi ý cá nhân hóa**: Đề xuất các xe tương tự dựa trên sở thích và lựa chọn của người dùng
+    - 🚀 **Phân cụm thông minh**: Tự động phân loại xe theo 5 phân khúc xe có đặc trưng dựa trên máy học.
     - 📊 **Lọc đa tiêu chí**: Hỗ trợ lọc theo nhiều tiêu chí như hãng xe, giá, khu vực, dung tích động cơ...
     - 💡 **Trải nghiệm tốt nhất**: Cung cấp giao diện thân thiện, dễ sử dụng cho mọi đối tượng người dùng
     """
@@ -614,6 +615,7 @@ def show_about_page():
         - Giá cả, số km đã đi
         - Năm đăng ký, xuất xứ
         - Mô tả chi tiết sản phẩm
+        - **Badge phân cụm màu sắc**
         """
         )
 
@@ -639,6 +641,166 @@ def show_about_page():
         )
 
     st.markdown("---")
+
+    # ==============================
+    # 🚀 PHẦN MỚI: PHÂN CỤM XE MÁY
+    # ==============================
+    st.markdown("## 🚀 Tính Năng Phân Cụm Xe Máy Thông Minh")
+    
+    st.markdown(
+        """
+        Hệ thống sử dụng **Machine Learning (K-Means Clustering)** để tự động phân loại 
+        xe máy thành **5 phân khúc** dựa trên nhiều đặc điểm:
+        """
+    )
+
+    # Hiển thị 5 cụm với màu sắc
+    cluster_info = {
+        0: {
+            "name": "Xe Phổ Thông Cao Cấp",
+            "color": "#f94144",
+            "icon": "🏆",
+            "description": "Xe phổ thông nhưng giá cao, chất lượng tốt, ít km đã đi",
+            "examples": "Honda SH Mode, Yamaha Grande, Vespa Primavera"
+        },
+        1: {
+            "name": "Xe Số Cũ – Kinh Tế",
+            "color": "#f3722c",
+            "icon": "💰",
+            "description": "Xe số đã qua sử dụng lâu, giá rẻ, phù hợp sinh viên",
+            "examples": "Honda Wave, Future cũ, Dream cũ"
+        },
+        2: {
+            "name": "Xe Ít Sử Dụng – Còn Mới",
+            "color": "#f9c74f",
+            "icon": "✨",
+            "description": "Xe đã qua sử dụng nhưng số km rất thấp, gần như mới",
+            "examples": "Xe zin, chính chủ, ít đi"
+        },
+        3: {
+            "name": "Xe Phổ Thông – Đã Qua Sử Dụng",
+            "color": "#90be6d",
+            "icon": "🛵",
+            "description": "Xe phổ thông, giá trung bình, đã qua sử dụng vừa phải",
+            "examples": "Air Blade, Vision, Lead đã qua sử dụng"
+        },
+        4: {
+            "name": "Xe Cao Cấp & PKL",
+            "color": "#577590",
+            "icon": "🏍️",
+            "description": "Xe phân khối lớn, moto cao cấp, giá trị cao",
+            "examples": "Honda CBR, Yamaha R15, Kawasaki Ninja"
+        }
+    }
+
+    # Hiển thị từng cụm
+    for cluster_id, info in cluster_info.items():
+        with st.expander(f"{info['icon']} **Cụm {cluster_id}: {info['name']}**", expanded=False):
+            col_a, col_b = st.columns([1, 3])
+            
+            with col_a:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color: {info['color']};
+                        color: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        text-align: center;
+                        font-size: 40px;
+                    ">
+                        {info['icon']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            
+            with col_b:
+                st.markdown(f"**📝 Mô tả:** {info['description']}")
+                st.markdown(f"**🏍️ Ví dụ:** {info['examples']}")
+                
+                # Thống kê số lượng xe trong cụm
+                cluster_count = len(df[df['cluster_id'] == cluster_id])
+                cluster_pct = (cluster_count / len(df)) * 100
+                st.markdown(f"**📊 Số lượng:** {cluster_count:,} xe ({cluster_pct:.1f}%)")
+
+    st.markdown("---")
+
+    # Lợi ích của phân cụm
+    st.markdown("### 💡 Lợi Ích Của Phân Cụm")
+    
+    col_benefit1, col_benefit2 = st.columns(2)
+    
+    with col_benefit1:
+        st.markdown(
+            """
+            #### 👤 Cho Người Dùng
+            
+            - ✅ **Dễ dàng nhận biết**: Badge màu sắc giúp phân biệt nhanh phân khúc xe
+            - ✅ **Tìm kiếm nhanh hơn**: Lọc theo nhóm xe phù hợp với nhu cầu
+            - ✅ **So sánh dễ dàng**: Xe cùng cụm có đặc điểm tương đồng
+            - ✅ **Gợi ý chính xác**: Hệ thống đề xuất xe trong cùng phân khúc
+            - ✅ **Hiểu rõ giá trị**: Biết xe thuộc phân khúc nào để đánh giá giá
+            """
+        )
+    
+    with col_benefit2:
+        st.markdown(
+            """
+            #### 🏢 Cho Quản Trị Viên
+            
+            - ✅ **Phân tích thị trường**: Hiểu rõ cơ cấu xe trên sàn
+            - ✅ **Quản lý**: Theo dõi số lượng xe theo từng phân khúc
+            - ✅ **Chiến lược giá**: Định giá dựa trên phân cụm tự động
+            - ✅ **Marketing hiệu quả**: Nhắm đúng đối tượng khách hàng
+            - ✅ **Báo cáo nhanh**: Thống kê theo nhóm xe dễ dàng
+            """
+        )
+
+    st.markdown("---")
+
+    # Công nghệ phân cụm
+    st.markdown("### 🧠 Công Nghệ Phân Cụm")
+    
+    st.markdown(
+        """
+        #### 📊 Thuật Toán: K-Means Clustering
+        
+        Hệ thống sử dụng thuật toán **K-Means** với các bước:
+        
+        1. **Chuẩn hóa dữ liệu**: Sử dụng MinMaxScaler để đưa các đặc điểm về cùng thang đo
+        2. **Trích xuất đặc điểm**: 8 features quan trọng:
+           - `price_minmax`: Giá xe (đã chuẩn hóa)
+           - `log_km`: Số km đã đi (log transform)
+           - `engine_cc`: Dung tích động cơ
+           - `engine_class`: Phân loại động cơ (1-4)
+           - `vehicle_type_num`: Loại xe (số, tay ga, PKL)
+           - `power_ratio`: Tỷ lệ công suất/giá
+           - `xe_pkl`: Xe phân khối lớn (0/1)
+           - `xe_zin`: Xe zin (0/1)
+        
+        3. **Phân cụm**: K-Means với k=5 tự động gom nhóm xe tương đồng
+        4. **Gán nhãn**: Mỗi cụm được gán tên có ý nghĩa dựa trên đặc điểm trung bình
+        5. **Màu sắc**: Mỗi cụm có màu riêng để dễ nhận biết
+        """
+    )
+
+    # Visualization của phân cụm
+    st.info(
+        """
+        💡 **Ví dụ thực tế**: 
+        
+        - Một chiếc **Honda SH 2020, giá 70 triệu, 5000km** → Cụm 0 (Xe Phổ Thông Cao Cấp) 🏆
+        - Một chiếc **Wave Alpha 2010, giá 8 triệu, 50000km** → Cụm 1 (Xe Số Cũ – Kinh Tế) 💰
+        - Một chiếc **Yamaha R15 2022, giá 90 triệu, 2000km** → Cụm 4 (Xe Cao Cấp & PKL) 🏍️
+        """
+    )
+
+    st.markdown("---")
+
+    # ==============================
+    # KẾT THÚC PHẦN PHÂN CỤM
+    # ==============================
 
     # Công nghệ
     st.markdown("## 🛠️ Công Nghệ Sử Dụng")
@@ -666,6 +828,7 @@ def show_about_page():
             """
         **Machine Learning**
         - 🤖 **Scikit-learn**: Thuật toán ML
+        - 🎯 **K-Means**: Phân cụm xe máy
         - 📝 **TF-IDF**: Vector hóa văn bản
         - 📏 **Cosine Similarity**: Tính độ tương đồng
         """
@@ -688,23 +851,28 @@ def show_about_page():
 
     st.markdown(
         """
-    Hệ thống sử dụng **Content-Based Filtering** với các bước:
+    Hệ thống sử dụng **Content-Based Filtering** kết hợp **Clustering** với các bước:
     
-    1. **Vector hóa đặc điểm**: Chuyển đổi thông tin xe thành vector số
-    2. **TF-IDF**: Trích xuất đặc điểm quan trọng từ mô tả và thông tin xe
-    3. **Cosine Similarity**: Tính toán độ tương đồng giữa các xe
-    4. **Ranking**: Sắp xếp và đề xuất xe có độ tương đồng cao nhất
+    1. **Phân cụm trước**: Gom nhóm xe theo 5 phân khúc bằng K-Means
+    2. **Vector hóa đặc điểm**: Chuyển đổi thông tin xe thành vector số
+    3. **TF-IDF**: Trích xuất đặc điểm quan trọng từ mô tả và thông tin xe
+    4. **Cosine Similarity**: Tính toán độ tương đồng giữa các xe
+    5. **Ranking**: Sắp xếp và đề xuất xe có độ tương đồng cao nhất (ưu tiên cùng cụm)
     """
     )
 
     # Visualization of similarity
     st.info(
         """
-    💡 **Ví dụ**: Khi bạn xem một chiếc Honda Wave Alpha, hệ thống sẽ tìm các xe có:
-    - Cùng hãng hoặc phân khúc tương tự
-    - Giá cả gần nhau
-    - Dung tích động cơ tương đương
-    - Đặc điểm kỹ thuật giống nhau
+    💡 **Ví dụ**: Khi bạn xem một chiếc Honda Wave Alpha (Cụm 1 - Xe Số Cũ), hệ thống sẽ:
+    
+    1. **Ưu tiên** gợi ý xe trong cùng Cụm 1 (Future, Dream cũ...)
+    2. Tìm xe có **đặc điểm tương tự**:
+       - Cùng hãng hoặc phân khúc
+       - Giá cả gần nhau
+       - Dung tích động cơ tương đương
+       - Đặc điểm kỹ thuật giống nhau
+    3. Hiển thị **độ tương đồng** (%) để bạn dễ so sánh
     """
     )
 
@@ -725,7 +893,36 @@ def show_about_page():
         st.metric("🏷️ Số loại xe", f"{df['vehicle_type'].nunique()}")
 
     with col4:
-        st.metric("📍 Số khu vực", f"{df['location'].nunique()}")
+        st.metric("🚀 Số phân cụm", "5")
+
+    # Thống kê phân cụm
+    st.markdown("### 📈 Phân Bố Theo Cụm")
+    
+    cluster_stats = df['cluster_name'].value_counts().sort_index()
+    
+    cols_stats = st.columns(5)
+    for i, (cluster_name, count) in enumerate(cluster_stats.items()):
+        with cols_stats[i]:
+            cluster_id = df[df['cluster_name'] == cluster_name]['cluster_id'].iloc[0]
+            color = cluster_info[cluster_id]['color']
+            pct = (count / len(df)) * 100
+            
+            st.markdown(
+                f"""
+                <div style="
+                    background-color: {color};
+                    color: white;
+                    padding: 15px;
+                    border-radius: 8px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 24px; font-weight: bold;">{count:,}</div>
+                    <div style="font-size: 12px; margin-top: 5px;">{pct:.1f}%</div>
+                    <div style="font-size: 10px; margin-top: 5px; opacity: 0.9;">{cluster_info[cluster_id]['icon']} Cụm {cluster_id}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     st.markdown("---")
 
@@ -737,8 +934,9 @@ def show_about_page():
             """
         1. Nhập từ khóa vào ô tìm kiếm (tên xe, hãng, loại xe...)
         2. Sử dụng bộ lọc để thu hẹp kết quả
-        3. Nhấn nút "Tìm kiếm" hoặc Enter
-        4. Xem danh sách kết quả phù hợp
+        3. **Chú ý badge màu sắc** để biết xe thuộc phân khúc nào
+        4. Nhấn nút "Tìm kiếm" hoặc Enter
+        5. Xem danh sách kết quả phù hợp
         """
         )
 
@@ -749,6 +947,7 @@ def show_about_page():
         2. Chọn các tiêu chí: Hãng xe, Model, Loại xe, Khu vực, Dung tích
         3. Điều chỉnh khoảng giá mong muốn
         4. Kết quả sẽ tự động cập nhật
+        5. **Lưu ý**: Xe cùng màu badge thuộc cùng phân khúc
         """
         )
 
@@ -756,9 +955,30 @@ def show_about_page():
         st.markdown(
             """
         1. Nhấn nút "Xem chi tiết" trên xe bạn quan tâm
-        2. Xem đầy đủ thông tin chi tiết của xe
-        3. Cuộn xuống phần "Xe Tương Tự" để xem gợi ý
-        4. Nhấn "Xem chi tiết" trên xe gợi ý để khám phá thêm
+        2. Xem **badge phân cụm** ở đầu trang để biết xe thuộc nhóm nào
+        3. Xem đầy đủ thông tin chi tiết của xe
+        4. Cuộn xuống phần "Xe Tương Tự" để xem gợi ý
+        5. **Xe gợi ý ưu tiên cùng phân cụm** để đảm bảo phù hợp
+        6. Nhấn "Xem chi tiết" trên xe gợi ý để khám phá thêm
+        """
+        )
+    
+    with st.expander("🚀 Hiểu về phân cụm xe"):
+        st.markdown(
+            """
+        **Badge màu sắc** trên mỗi xe cho biết:
+        
+        - 🏆 **Đỏ đậm** (#f94144): Xe Phổ Thông Cao Cấp - Chất lượng tốt, giá cao
+        - 💰 **Cam đậm** (#f3722c): Xe Số Cũ – Kinh Tế - Giá rẻ, đã qua sử dụng lâu
+        - ✨ **Vàng** (#f9c74f): Xe Ít Sử Dụng – Còn Mới - Số km thấp, gần như mới
+        - 🛵 **Xanh lá** (#90be6d): Xe Phổ Thông – Đã Qua Sử Dụng - Giá trung bình
+        - 🏍️ **Xanh dương** (#577590): Xe Cao Cấp & PKL - Phân khối lớn, giá trị cao
+        
+        **Lợi ích**:
+        - Nhận biết nhanh phân khúc xe
+        - So sánh xe cùng nhóm dễ dàng
+        - Đánh giá giá trị hợp lý
+        - Tìm xe phù hợp với ngân sách
         """
         )
 
@@ -784,12 +1004,12 @@ def show_about_page():
         """
     <div style='text-align: center; color: #666; padding: 20px;'>
         <p>💡 Được phát triển bởi Hoàng Phúc & Bích Thủy</p>
+        <p>🚀 Tích hợp Machine Learning Clustering cho phân loại thông minh</p>
         <p>📧 Liên hệ hỗ trợ: phucthuy@buonbanxemay.vn</p>
     </div>
     """,
         unsafe_allow_html=True,
     )
-
 
 def show_search_page():
     """Trang tìm kiếm"""
@@ -1160,6 +1380,610 @@ def show_detail_page():
                     st.session_state["scroll_to_top"] = True
                     st.rerun()
 
+# ==============================
+# 📊 TRANG QUẢN TRỊ VIÊN - SỬA LỖI
+# ==============================
+def show_admin_page():
+    """Trang quản trị viên - Phân tích và quản lý"""
+    
+    # Header với gradient
+    st.markdown(
+        """
+        <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 20px;'>
+            <h1 style='color: white; margin: 0;'>👨‍💼 BẢNG ĐIỀU KHIỂN QUẢN TRỊ</h1>
+            <p style='color: white; margin: 10px 0 0 0;'>Phân tích dữ liệu và quản lý hệ thống</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    # ==============================
+    # 📊 SECTION 1: TỔNG QUAN HỆ THỐNG
+    # ==============================
+    st.markdown("## 📊 Tổng Quan Hệ Thống")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.metric(
+            "🏍️ Tổng số xe",
+            f"{len(df):,}",
+            delta=None
+        )
+    
+    with col2:
+        st.metric(
+            "🏢 Số hãng xe",
+            f"{df['brand'].nunique()}",
+            delta=None
+        )
+    
+    with col3:
+        avg_price = df['price'].mean()
+        st.metric(
+            "💰 Giá TB",
+            f"{avg_price:.1f}M",
+            delta=None
+        )
+    
+    with col4:
+        avg_km = df['km_driven'].mean()
+        st.metric(
+            "📏 Km TB",
+            f"{avg_km:,.0f}",
+            delta=None
+        )
+    
+    with col5:
+        st.metric(
+            "🚀 Phân cụm",
+            "5",
+            delta=None
+        )
+    
+    st.markdown("---")
+    
+    # ==============================
+    # 📈 SECTION 2: PHÂN TÍCH PHÂN CỤM
+    # ==============================
+    st.markdown("## 🚀 Phân Tích Phân Cụm")
+    
+    # ✅ KIỂM TRA CÁC CỘT TỒN TẠI
+    agg_dict = {
+        'price': ['mean', 'min', 'max', 'count'],
+        'km_driven': 'mean',
+        'age': 'mean'
+    }
+    
+    # Thêm engine_capacity nếu có (thay vì engine_cc)
+    if 'engine_capacity' in df.columns:
+        # Chuyển đổi engine_capacity sang số nếu cần
+        df['engine_capacity_num'] = df['engine_capacity'].str.extract('(\d+)').astype(float)
+        agg_dict['engine_capacity_num'] = 'mean'
+    
+    # Thống kê theo cụm
+    cluster_stats = df.groupby('cluster_id').agg(agg_dict).round(2)
+    
+    # Đặt tên cột
+    if 'engine_capacity_num' in agg_dict:
+        cluster_stats.columns = ['Giá TB', 'Giá Min', 'Giá Max', 'Số lượng', 'Km TB', 'Tuổi TB', 'CC TB']
+    else:
+        cluster_stats.columns = ['Giá TB', 'Giá Min', 'Giá Max', 'Số lượng', 'Km TB', 'Tuổi TB']
+    
+    cluster_stats = cluster_stats.reset_index()
+    
+    # Thêm tên cụm và màu
+    cluster_labels = {
+        0: "Xe Phổ Thông Cao Cấp",
+        1: "Xe Số Cũ – Kinh Tế",
+        2: "Xe Ít Sử Dụng – Còn Mới",
+        3: "Xe Phổ Thông – Đã Qua Sử Dụng",
+        4: "Xe Cao Cấp & PKL"
+    }
+    
+    cluster_colors = {
+        0: "#f94144",
+        1: "#f3722c",
+        2: "#f9c74f",
+        3: "#90be6d",
+        4: "#577590",
+    }
+    
+    cluster_stats['Tên cụm'] = cluster_stats['cluster_id'].map(cluster_labels)
+    cluster_stats['Màu'] = cluster_stats['cluster_id'].map(cluster_colors)
+    
+    # Hiển thị bảng với màu sắc
+    st.markdown("### 📋 Bảng Thống Kê Chi Tiết")
+    
+    for idx, row in cluster_stats.iterrows():
+        with st.expander(f"🚀 Cụm {row['cluster_id']}: {row['Tên cụm']} ({row['Số lượng']:.0f} xe)", expanded=False):
+            col_a, col_b = st.columns([1, 3])
+            
+            with col_a:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color: {row['Màu']};
+                        color: white;
+                        padding: 40px;
+                        border-radius: 10px;
+                        text-align: center;
+                        font-size: 50px;
+                        font-weight: bold;
+                    ">
+                        {row['cluster_id']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            
+            with col_b:
+                # ✅ KIỂM TRA CỘT CC TB
+                if 'CC TB' in row:
+                    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+                else:
+                    col_b1, col_b2, col_b3 = st.columns(3)
+                
+                with col_b1:
+                    st.metric("💰 Giá TB", f"{row['Giá TB']:.1f}M")
+                    st.metric("📉 Giá Min", f"{row['Giá Min']:.1f}M")
+                
+                with col_b2:
+                    st.metric("📈 Giá Max", f"{row['Giá Max']:.1f}M")
+                    st.metric("🏍️ Số lượng", f"{row['Số lượng']:.0f}")
+                
+                with col_b3:
+                    st.metric("📏 Km TB", f"{row['Km TB']:,.0f}")
+                    st.metric("📅 Tuổi TB", f"{row['Tuổi TB']:.1f} năm")
+                
+                if 'CC TB' in row:
+                    with col_b4:
+                        st.metric("⚙️ CC TB", f"{row['CC TB']:.0f}cc")
+                        pct = (row['Số lượng'] / len(df)) * 100
+                        st.metric("📊 Tỷ lệ", f"{pct:.1f}%")
+                else:
+                    # Hiển thị tỷ lệ ở cột 3
+                    with col_b3:
+                        pct = (row['Số lượng'] / len(df)) * 100
+                        st.metric("📊 Tỷ lệ", f"{pct:.1f}%")
+    
+    st.markdown("---")
+    
+    # ==============================
+    # 📊 SECTION 3: BIỂU ĐỒ PHÂN TÍCH
+    # ==============================
+    st.markdown("## 📊 Biểu Đồ Phân Tích")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Phân bố cụm", "💰 Phân tích giá", "🏢 Thương hiệu", "📍 Khu vực"])
+    
+    with tab1:
+        st.markdown("### 📈 Phân Bố Xe Theo Cụm")
+        
+        # Tính toán phân bố
+        cluster_distribution = df['cluster_name'].value_counts()
+        
+        # Hiển thị dạng bar chart bằng HTML/CSS
+        for cluster_name, count in cluster_distribution.items():
+            cluster_id = df[df['cluster_name'] == cluster_name]['cluster_id'].iloc[0]
+            color = cluster_colors[cluster_id]
+            pct = (count / len(df)) * 100
+            
+            st.markdown(
+                f"""
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span><strong>{cluster_name}</strong></span>
+                        <span><strong>{count:,} xe ({pct:.1f}%)</strong></span>
+                    </div>
+                    <div style="
+                        width: 100%;
+                        background-color: #e0e0e0;
+                        border-radius: 5px;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            width: {pct}%;
+                            background-color: {color};
+                            padding: 10px;
+                            color: white;
+                            text-align: center;
+                            font-weight: bold;
+                        ">
+                            {pct:.1f}%
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        # Insights
+        st.info(
+            f"""
+            💡 **Insights:**
+            - Cụm có nhiều xe nhất: **{cluster_distribution.index[0]}** ({cluster_distribution.values[0]:,} xe)
+            - Cụm có ít xe nhất: **{cluster_distribution.index[-1]}** ({cluster_distribution.values[-1]:,} xe)
+            - Phân bố tương đối {'đều' if cluster_distribution.std() < 500 else 'không đều'}
+            """
+        )
+    
+    with tab2:
+        st.markdown("### 💰 Phân Tích Giá Theo Cụm")
+        
+        # Tạo bảng so sánh giá
+        price_comparison = df.groupby('cluster_name')['price'].agg(['mean', 'min', 'max', 'median']).round(2)
+        price_comparison.columns = ['Giá TB', 'Giá Min', 'Giá Max', 'Giá Median']
+        price_comparison = price_comparison.sort_values('Giá TB', ascending=False)
+        
+        st.dataframe(
+            price_comparison.style.background_gradient(cmap='RdYlGn_r', subset=['Giá TB']),
+            use_container_width=True
+        )
+        
+        # Phân tích khoảng giá
+        st.markdown("#### 📊 Phân Bố Theo Khoảng Giá")
+        
+        price_ranges = {
+            "< 10M": len(df[df['price'] < 10]),
+            "10-20M": len(df[(df['price'] >= 10) & (df['price'] < 20)]),
+            "20-40M": len(df[(df['price'] >= 20) & (df['price'] < 40)]),
+            "40-80M": len(df[(df['price'] >= 40) & (df['price'] < 80)]),
+            "> 80M": len(df[df['price'] >= 80])
+        }
+        
+        col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
+        
+        for col, (range_name, count) in zip([col_p1, col_p2, col_p3, col_p4, col_p5], price_ranges.items()):
+            with col:
+                pct = (count / len(df)) * 100
+                st.metric(range_name, f"{count:,}", f"{pct:.1f}%")
+        
+        # Insights
+        max_range = max(price_ranges, key=price_ranges.get)
+        st.info(
+            f"""
+            💡 **Insights:**
+            - Khoảng giá phổ biến nhất: **{max_range}** ({price_ranges[max_range]:,} xe)
+            - Giá trung bình toàn hệ thống: **{df['price'].mean():.1f}M VNĐ**
+            - Giá cao nhất: **{df['price'].max():.1f}M VNĐ**
+            - Giá thấp nhất: **{df['price'].min():.1f}M VNĐ**
+            """
+        )
+    
+    with tab3:
+        st.markdown("### 🏢 Phân Tích Thương Hiệu")
+        
+        # Top 10 thương hiệu
+        top_brands = df['brand'].value_counts().head(10)
+        
+        st.markdown("#### 🏆 Top 10 Thương Hiệu")
+        
+        for idx, (brand, count) in enumerate(top_brands.items(), 1):
+            pct = (count / len(df)) * 100
+            avg_price = df[df['brand'] == brand]['price'].mean()
+            
+            st.markdown(
+                f"""
+                <div style="
+                    background-color: #f0f0f0;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+                    border-left: 5px solid #667eea;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="font-size: 18px;">#{idx}. {brand}</strong>
+                            <div style="color: #666; margin-top: 5px;">
+                                {count:,} xe ({pct:.1f}%) | Giá TB: {avg_price:.1f}M VNĐ
+                            </div>
+                        </div>
+                        <div style="
+                            background-color: #667eea;
+                            color: white;
+                            padding: 10px 20px;
+                            border-radius: 5px;
+                            font-weight: bold;
+                        ">
+                            {count:,}
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        # Phân tích theo cụm
+        st.markdown("#### 📊 Thương Hiệu Theo Cụm")
+        
+        brand_cluster = pd.crosstab(df['brand'], df['cluster_name'])
+        top_brand_cluster = brand_cluster.loc[top_brands.index[:5]]
+        
+        st.dataframe(
+            top_brand_cluster.style.background_gradient(cmap='Blues'),
+            use_container_width=True
+        )
+        
+        st.info(
+            f"""
+            💡 **Insights:**
+            - Thương hiệu phổ biến nhất: **{top_brands.index[0]}** ({top_brands.values[0]:,} xe)
+            - Tổng số thương hiệu: **{df['brand'].nunique()}**
+            - Thương hiệu có giá TB cao nhất: **{df.groupby('brand')['price'].mean().idxmax()}**
+            """
+        )
+    
+    with tab4:
+        st.markdown("### 📍 Phân Tích Khu Vực")
+        
+        # Top 10 khu vực
+        top_locations = df['location'].value_counts().head(10)
+        
+        st.markdown("#### 🗺️ Top 10 Khu Vực")
+        
+        col_l1, col_l2 = st.columns(2)
+        
+        for idx, (location, count) in enumerate(top_locations.items(), 1):
+            pct = (count / len(df)) * 100
+            avg_price = df[df['location'] == location]['price'].mean()
+            
+            col = col_l1 if idx % 2 == 1 else col_l2
+            
+            with col:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color: #f9f9f9;
+                        padding: 12px;
+                        border-radius: 6px;
+                        margin-bottom: 10px;
+                        border: 1px solid #e0e0e0;
+                    ">
+                        <strong>#{idx}. {location}</strong><br>
+                        <span style="color: #666;">
+                            {count:,} xe ({pct:.1f}%)<br>
+                            Giá TB: {avg_price:.1f}M VNĐ
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        
+        # Phân tích theo cụm
+        st.markdown("#### 📊 Khu Vực Theo Cụm")
+        
+        location_cluster = df.groupby(['location', 'cluster_name']).size().unstack(fill_value=0)
+        top_location_cluster = location_cluster.loc[top_locations.index[:5]]
+        
+        st.dataframe(
+            top_location_cluster.style.background_gradient(cmap='Greens'),
+            use_container_width=True
+        )
+        
+        st.info(
+            f"""
+            💡 **Insights:**
+            - Khu vực có nhiều xe nhất: **{top_locations.index[0]}** ({top_locations.values[0]:,} xe)
+            - Tổng số khu vực: **{df['location'].nunique()}**
+            - Khu vực có giá TB cao nhất: **{df.groupby('location')['price'].mean().idxmax()}**
+            """
+        )
+    
+    st.markdown("---")
+    
+    # ==============================
+    # 🔍 SECTION 4: TÌM KIẾM & LỌC NÂNG CAO
+    # ==============================
+    st.markdown("## 🔍 Tìm Kiếm & Lọc Nâng Cao")
+    
+    with st.expander("🔧 Bộ Lọc Quản Trị", expanded=False):
+        col_f1, col_f2, col_f3 = st.columns(3)
+        
+        with col_f1:
+            filter_cluster = st.multiselect(
+                "🚀 Chọn cụm",
+                options=["Tất cả"] + list(cluster_labels.values()),
+                default=["Tất cả"],
+                key="admin_filter_cluster"
+            )
+        
+        with col_f2:
+            filter_brand = st.multiselect(
+                "🏢 Chọn thương hiệu",
+                options=["Tất cả"] + sorted(df['brand'].unique().tolist()),
+                default=["Tất cả"],
+                key="admin_filter_brand"
+            )
+        
+        with col_f3:
+            filter_location = st.multiselect(
+                "📍 Chọn khu vực",
+                options=["Tất cả"] + sorted(df['location'].unique().tolist()),
+                default=["Tất cả"],
+                key="admin_filter_location"
+            )
+        
+        col_f4, col_f5 = st.columns(2)
+        
+        with col_f4:
+            filter_price_min = st.number_input(
+                "💰 Giá từ (triệu)",
+                min_value=0.0,
+                max_value=float(df['price'].max()),
+                value=0.0,
+                key="admin_filter_price_min"
+            )
+        
+        with col_f5:
+            filter_price_max = st.number_input(
+                "💰 Giá đến (triệu)",
+                min_value=0.0,
+                max_value=float(df['price'].max()),
+                value=float(df['price'].max()),
+                key="admin_filter_price_max"
+            )
+    
+    # Áp dụng filter
+    filtered_admin_df = df.copy()
+    
+    if "Tất cả" not in filter_cluster:
+        filtered_admin_df = filtered_admin_df[filtered_admin_df['cluster_name'].isin(filter_cluster)]
+    
+    if "Tất cả" not in filter_brand:
+        filtered_admin_df = filtered_admin_df[filtered_admin_df['brand'].isin(filter_brand)]
+    
+    if "Tất cả" not in filter_location:
+        filtered_admin_df = filtered_admin_df[filtered_admin_df['location'].isin(filter_location)]
+    
+    filtered_admin_df = filtered_admin_df[
+        (filtered_admin_df['price'] >= filter_price_min) &
+        (filtered_admin_df['price'] <= filter_price_max)
+    ]
+    
+    # Hiển thị kết quả
+    st.markdown(f"### 📋 Kết Quả Lọc: {len(filtered_admin_df):,} xe")
+    
+    if len(filtered_admin_df) > 0:
+        # Tùy chọn hiển thị
+        col_opt1, col_opt2, col_opt3 = st.columns(3)
+        
+        with col_opt1:
+            sort_by = st.selectbox(
+                "Sắp xếp theo",
+                ["price", "km_driven", "age", "registration_year"],
+                format_func=lambda x: {
+                    "price": "Giá",
+                    "km_driven": "Số km",
+                    "age": "Tuổi xe",
+                    "registration_year": "Năm đăng ký"
+                }[x],
+                key="admin_sort_by"
+            )
+        
+        with col_opt2:
+            sort_order = st.selectbox(
+                "Thứ tự",
+                ["Giảm dần", "Tăng dần"],
+                key="admin_sort_order"
+            )
+        
+        with col_opt3:
+            show_limit = st.number_input(
+                "Hiển thị",
+                min_value=10,
+                max_value=100,
+                value=20,
+                step=10,
+                key="admin_show_limit"
+            )
+        
+        # Sắp xếp
+        ascending = sort_order == "Tăng dần"
+        display_df = filtered_admin_df.sort_values(by=sort_by, ascending=ascending).head(show_limit)
+        
+        # ✅ KIỂM TRA CÁC CỘT TỒN TẠI TRƯỚC KHI HIỂN THỊ
+        display_columns = ['brand', 'model', 'price', 'km_driven', 'age', 'vehicle_type', 'location', 'cluster_name']
+        
+        # Lọc chỉ các cột tồn tại
+        available_columns = [col for col in display_columns if col in display_df.columns]
+        
+        # Hiển thị bảng
+        st.dataframe(
+            display_df[available_columns].rename(columns={
+                'brand': 'Hãng',
+                'model': 'Model',
+                'price': 'Giá (M)',
+                'km_driven': 'Km',
+                'age': 'Tuổi',
+                'vehicle_type': 'Loại',
+                'location': 'Khu vực',
+                'cluster_name': 'Cụm'
+            }),
+            use_container_width=True,
+            height=400
+        )
+        
+        # Export data
+        st.markdown("#### 💾 Xuất Dữ Liệu")
+        
+        col_export1, col_export2 = st.columns(2)
+        
+        with col_export1:
+            csv = display_df.to_csv(index=False).encode('utf-8-sig')
+            st.download_button(
+                label="📥 Tải xuống CSV",
+                data=csv,
+                file_name=f"motorbike_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        
+        with col_export2:
+            # Summary stats
+            if st.button("📊 Xem thống kê tóm tắt", use_container_width=True):
+                st.write("**Thống kê dữ liệu đã lọc:**")
+                numeric_cols = ['price', 'km_driven', 'age']
+                available_numeric = [col for col in numeric_cols if col in display_df.columns]
+                st.write(display_df[available_numeric].describe())
+    
+    else:
+        st.warning("⚠️ Không có dữ liệu phù hợp với bộ lọc")
+    
+    st.markdown("---")
+    
+    # ==============================
+    # ⚙️ SECTION 5: CÀI ĐẶT HỆ THỐNG
+    # ==============================
+    st.markdown("## ⚙️ Cài Đặt Hệ Thống")
+    
+    col_set1, col_set2 = st.columns(2)
+    
+    with col_set1:
+        st.markdown("### 🔄 Cập Nhật Dữ Liệu")
+        
+        if st.button("🔄 Làm mới dữ liệu", use_container_width=True):
+            st.cache_resource.clear()
+            st.success("✅ Đã làm mới dữ liệu!")
+            st.rerun()
+        
+        st.markdown("### 📊 Thông Tin Model")
+        st.info(
+            f"""
+            - **Số features:** 8
+            - **Thuật toán:** K-Means Clustering
+            - **Số cụm:** 5
+            - **Similarity:** Cosine Similarity
+            """
+        )
+    
+    with col_set2:
+        st.markdown("### 📈 Hiệu Suất Hệ Thống")
+        
+        col_perf1, col_perf2 = st.columns(2)
+        
+        with col_perf1:
+            st.metric("Số xe", f"{len(df):,}")
+            st.metric("Số cụm", "5")
+        
+        with col_perf2:
+            st.metric("Thương hiệu", f"{df['brand'].nunique()}")
+            st.metric("Khu vực", f"{df['location'].nunique()}")
+        
+        st.markdown("### 🕐 Thời Gian")
+        st.info(f"**Cập nhật lần cuối:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    
+    st.markdown("---")
+    
+    # Footer
+    st.markdown(
+        """
+        <div style='text-align: center; color: #666; padding: 20px;'>
+            <p>👨‍💼 Bảng điều khiển quản trị viên</p>
+            <p>🔒 Chỉ dành cho người quản trị hệ thống</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Load model
 model, df, cluster_model = load_model()
@@ -1177,6 +2001,9 @@ if "scroll_to_top" not in st.session_state:
     st.session_state["scroll_to_top"] = False
 
 # Sidebar navigation
+# ==============================
+# SIDEBAR NAVIGATION - CẬP NHẬT
+# ==============================
 with st.sidebar:
     st.markdown("## 🧭 Điều Hướng")
 
@@ -1197,12 +2024,50 @@ with st.sidebar:
         st.session_state["page"] = "search"
         st.session_state["scroll_to_top"] = True
         st.rerun()
+    
+    # ✅ THÊM NÚT QUẢN TRỊ
+    if st.button(
+        "👨‍💼 Quản Trị",
+        use_container_width=True,
+        type="primary" if st.session_state["page"] == "admin" else "secondary",
+    ):
+        st.session_state["page"] = "admin"
+        st.session_state["scroll_to_top"] = True
+        st.rerun()
 
+    # Phần thống kê và thông tin tác giả giữ nguyên...
+
+    # st.markdown("---")
+    # st.markdown("### 📊 Thống Kê Nhanh")
+    # st.metric("Tổng số xe", f"{len(df):,}")
+    # st.metric("Số hãng", f"{df['brand'].nunique()}")
+    # st.metric("Số dòng xe", f"{df['model'].nunique()}")
+    
+    # ==============================
+    # 👥 THÔNG TIN TÁC GIẢ & PHÁT HÀNH
+    # ==============================
     st.markdown("---")
-    st.markdown("### 📊 Thống Kê Nhanh")
-    st.metric("Tổng số xe", f"{len(df):,}")
-    st.metric("Số hãng", f"{df['brand'].nunique()}")
-    st.metric("Số dòng xe", f"{df['model'].nunique()}")
+    st.markdown(
+        """
+        <div style='
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        '>
+            <h4 style='margin: 0 0 10px 0; color: white;'>👥 Tác Giả</h4>
+            <p style='margin: 5px 0; font-size: 14px;'>
+                <strong>Hoàng Phúc & Bích Thủy</strong>
+            </p>
+            <hr style='border: 1px solid rgba(255,255,255,0.3); margin: 10px 0;'>
+            <p style='margin: 5px 0; font-size: 13px;'>
+                📅 <strong>Ngày phát hành:</strong><br>22/11/2025
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Check if need to scroll to top
 if st.session_state.get("scroll_to_top", False):
@@ -1213,41 +2078,45 @@ if st.session_state.get("scroll_to_top", False):
 # ==============================
 # 🔧 DEBUG HELPER
 # ==============================
-if st.sidebar.checkbox("🔧 Debug Mode"):
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔍 Debug Info")
+# if st.sidebar.checkbox("🔧 Debug Mode"):
+#     st.sidebar.markdown("---")
+#     st.sidebar.markdown("### 🔍 Debug Info")
     
-    st.sidebar.write(f"**DF Shape:** {df.shape}")
-    st.sidebar.write(f"**Clusters:** {df['cluster_id'].nunique()}")
+#     st.sidebar.write(f"**DF Shape:** {df.shape}")
+#     st.sidebar.write(f"**Clusters:** {df['cluster_id'].nunique()}")
     
-    # Test feature building
-    if st.sidebar.button("Test Feature Matrix"):
-        try:
-            fb = FeatureBuilder()
-            test_df = df.head(5)
-            df_proc = fb.preprocess_df(test_df)
-            X_test = fb.build_feature_matrix(df_proc)
+#     # Test feature building
+#     if st.sidebar.button("Test Feature Matrix"):
+#         try:
+#             fb = FeatureBuilder()
+#             test_df = df.head(5)
+#             df_proc = fb.preprocess_df(test_df)
+#             X_test = fb.build_feature_matrix(df_proc)
             
-            st.sidebar.success(f"✅ Shape: {X_test.shape}")
-            st.sidebar.write("**Feature names:**")
-            st.sidebar.code([
-                "price_minmax", "log_km", "engine_cc", "engine_class",
-                "vehicle_type_num", "power_ratio", "xe_pkl", "xe_zin"
-            ])
-            st.sidebar.write("**Sample row:**")
-            st.sidebar.code(X_test[0])
+#             st.sidebar.success(f"✅ Shape: {X_test.shape}")
+#             st.sidebar.write("**Feature names:**")
+#             st.sidebar.code([
+#                 "price_minmax", "log_km", "engine_cc", "engine_class",
+#                 "vehicle_type_num", "power_ratio", "xe_pkl", "xe_zin"
+#             ])
+#             st.sidebar.write("**Sample row:**")
+#             st.sidebar.code(X_test[0])
             
-        except Exception as e:
-            st.sidebar.error(f"❌ Error: {e}")
+#         except Exception as e:
+#             st.sidebar.error(f"❌ Error: {e}")
 
 
-# Route pages
+# ==============================
+# ROUTE PAGES - CẬP NHẬT
+# ==============================
 if st.session_state["page"] == "about":
     show_about_page()
 elif st.session_state["page"] == "search":
     show_search_page()
 elif st.session_state["page"] == "detail":
     show_detail_page()
+elif st.session_state["page"] == "admin":  # ✅ THÊM ROUTE MỚI
+    show_admin_page()
 
 # Footer
 st.markdown("---")
