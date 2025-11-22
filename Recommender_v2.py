@@ -1934,43 +1934,43 @@ def show_admin_page():
     # ==============================
     # ⚙️ SECTION 5: CÀI ĐẶT HỆ THỐNG
     # ==============================
-    st.markdown("## ⚙️ Cài Đặt Hệ Thống")
+    # st.markdown("## ⚙️ Cài Đặt Hệ Thống")
     
-    col_set1, col_set2 = st.columns(2)
+    # col_set1, col_set2 = st.columns(2)
     
-    with col_set1:
-        st.markdown("### 🔄 Cập Nhật Dữ Liệu")
+    # with col_set1:
+    #     st.markdown("### 🔄 Cập Nhật Dữ Liệu")
         
-        if st.button("🔄 Làm mới dữ liệu", use_container_width=True):
-            st.cache_resource.clear()
-            st.success("✅ Đã làm mới dữ liệu!")
-            st.rerun()
+    #     if st.button("🔄 Làm mới dữ liệu", use_container_width=True):
+    #         st.cache_resource.clear()
+    #         st.success("✅ Đã làm mới dữ liệu!")
+    #         st.rerun()
         
-        st.markdown("### 📊 Thông Tin Model")
-        st.info(
-            f"""
-            - **Số features:** 8
-            - **Thuật toán:** K-Means Clustering
-            - **Số cụm:** 5
-            - **Similarity:** Cosine Similarity
-            """
-        )
+    #     st.markdown("### 📊 Thông Tin Model")
+    #     st.info(
+    #         f"""
+    #         - **Số features:** 8
+    #         - **Thuật toán:** K-Means Clustering
+    #         - **Số cụm:** 5
+    #         - **Similarity:** Cosine Similarity
+    #         """
+    #     )
     
-    with col_set2:
-        st.markdown("### 📈 Hiệu Suất Hệ Thống")
+    # with col_set2:
+    #     st.markdown("### 📈 Hiệu Suất Hệ Thống")
         
-        col_perf1, col_perf2 = st.columns(2)
+    #     col_perf1, col_perf2 = st.columns(2)
         
-        with col_perf1:
-            st.metric("Số xe", f"{len(df):,}")
-            st.metric("Số cụm", "5")
+    #     with col_perf1:
+    #         st.metric("Số xe", f"{len(df):,}")
+    #         st.metric("Số cụm", "5")
         
-        with col_perf2:
-            st.metric("Thương hiệu", f"{df['brand'].nunique()}")
-            st.metric("Khu vực", f"{df['location'].nunique()}")
+    #     with col_perf2:
+    #         st.metric("Thương hiệu", f"{df['brand'].nunique()}")
+    #         st.metric("Khu vực", f"{df['location'].nunique()}")
         
-        st.markdown("### 🕐 Thời Gian")
-        st.info(f"**Cập nhật lần cuối:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    #     st.markdown("### 🕐 Thời Gian")
+    #     st.info(f"**Cập nhật lần cuối:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
     
     st.markdown("---")
     
@@ -2121,3 +2121,4 @@ elif st.session_state["page"] == "admin":  # ✅ THÊM ROUTE MỚI
 # Footer
 st.markdown("---")
 st.markdown(f"*Hệ thống gợi ý xe máy - Tổng số xe: {len(df):,}*")
+
